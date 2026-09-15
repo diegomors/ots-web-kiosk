@@ -76,6 +76,12 @@ Google TV images that do not expose that screen must be provisioned once over AD
 adb shell appops set com.ontimestack.webkiosk WRITE_SETTINGS allow
 ```
 
+For Xiaomi TV Box and other physical Android TV devices, the macOS one-click
+wizard in [`tools/macos/OTS-Kiosk-Provisioner.command`](tools/macos/OTS-Kiosk-Provisioner.command)
+can pair over Wi-Fi, install or update the APK, grant and verify this access,
+and restart OTS Kiosk without deleting its configuration. Place a signed APK
+beside it as `OTS-Kiosk.apk`, double-click the provisioner, and follow the prompts.
+
 Restart OTS Kiosk or select the orientation again. Without this access, the app keeps the TV in its native full-screen orientation and shows a setup notice instead of using the touch-breaking letterboxed fallback.
 
 ## Security, privacy, and network behavior
