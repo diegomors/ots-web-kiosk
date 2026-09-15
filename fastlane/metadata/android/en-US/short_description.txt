@@ -1,1 +1,1 @@
-displays web content in full-screen mode
+Minimal full-screen web kiosk for Android TV and touch displays

@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "org.screenlite.webkiosk"
+    namespace = "com.ontimestack.webkiosk"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "org.screenlite.webkiosk"
+        applicationId = "com.ontimestack.webkiosk"
         minSdk = 22
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.0.11"
+        versionCode = 1
+        versionName = "0.1.0"
     }
 
     signingConfigs {
@@ -56,16 +56,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.tv.foundation)
-    implementation(libs.androidx.tv.material)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.foundation)
-    implementation(libs.androidx.leanback)
-    implementation(libs.androidx.datastore.preferences)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation(libs.junit)
 }
