@@ -33,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -248,12 +251,59 @@ private fun AdminDialogs(
     var pinError by remember(screen) { mutableStateOf<String?>(null) }
     var verifyingPin by remember(screen) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val pinFocus = remember { FocusRequester() }
+    val menuFocus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val dismissKeyboard = {
         focusManager.clearFocus()
         keyboardController?.hide()
         Unit
+    }
+    val requestPinFocus = {
+        pinFocus.requestFocus()
+        keyboardController?.show()
+        Unit
+    }
+    val submitPin = submitPin@{
+        if (verifyingPin) return@submitPin
+        pinError = when {
+            pin.isBlank() -> "Admin PIN is required"
+            pin.length !in 4..12 -> "PIN must contain 4 to 12 digits"
+            else -> null
+        }
+        if (pinError != null) {
+            requestPinFocus()
+            return@submitPin
+        }
+
+        dismissKeyboard()
+        val candidate = pin.toCharArray()
+        verifyingPin = true
+        scope.launch {
+            val valid = try {
+                withContext(Dispatchers.Default) { verifyPin(candidate) }
+            } finally {
+                candidate.fill('\u0000')
+            }
+            verifyingPin = false
+            pin = ""
+            if (valid) {
+                onScreenChange(AdminScreen.MENU)
+            } else {
+                pinError = "Incorrect PIN"
+                requestPinFocus()
+            }
+        }
+        Unit
+    }
+
+    LaunchedEffect(screen) {
+        when (screen) {
+            AdminScreen.PIN -> requestPinFocus()
+            AdminScreen.MENU -> menuFocus.requestFocus()
+            AdminScreen.NONE -> Unit
+        }
     }
 
     if (screen == AdminScreen.NONE) return
@@ -282,7 +332,9 @@ private fun AdminDialogs(
                                 pinError = null
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(pinFocus),
                         label = { Text("Admin PIN") },
                         isError = pinError != null,
                         supportingText = pinError?.let { message -> ({ Text(message) }) },
@@ -292,7 +344,7 @@ private fun AdminDialogs(
                             imeAction = ImeAction.Done
                         ),
                         keyboardActions = KeyboardActions(
-                            onDone = { dismissKeyboard() }
+                            onDone = { submitPin() }
                         ),
                         singleLine = true
                     )
@@ -308,29 +360,7 @@ private fun AdminDialogs(
                     enabled = !verifyingPin,
                     modifier = Modifier.height(48.dp),
                     shape = MaterialTheme.shapes.medium,
-                    onClick = {
-                        if (pin.isBlank()) {
-                            pinError = "Admin PIN is required"
-                            return@Button
-                        }
-                        dismissKeyboard()
-                        val candidate = pin.toCharArray()
-                        verifyingPin = true
-                        scope.launch {
-                            val valid = try {
-                                withContext(Dispatchers.Default) { verifyPin(candidate) }
-                            } finally {
-                                candidate.fill('\u0000')
-                            }
-                            verifyingPin = false
-                            pin = ""
-                            if (valid) {
-                                onScreenChange(AdminScreen.MENU)
-                            } else {
-                                pinError = "Incorrect PIN"
-                            }
-                        }
-                    }
+                    onClick = { submitPin() }
                 ) { Text(if (verifyingPin) "Checking…" else "Unlock") }
             }
         )
@@ -355,6 +385,7 @@ private fun AdminDialogs(
                         onClick = onSettings,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .focusRequester(menuFocus)
                             .height(52.dp),
                         shape = MaterialTheme.shapes.medium
                     ) {

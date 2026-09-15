@@ -3,7 +3,6 @@ package com.ontimestack.webkiosk.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -84,7 +83,6 @@ fun SettingsScreen(
     var setupPinConfirmationError by remember { mutableStateOf<String?>(null) }
     var errorFieldTarget by remember { mutableStateOf<SettingsFieldTarget?>(null) }
     var saving by remember { mutableStateOf(false) }
-    val initialFocus = remember { FocusRequester() }
     val urlFocus = remember { FocusRequester() }
     val setupPinFocus = remember { FocusRequester() }
     val setupPinConfirmationFocus = remember { FocusRequester() }
@@ -100,7 +98,8 @@ fun SettingsScreen(
     }
 
     LaunchedEffect(Unit) {
-        initialFocus.requestFocus()
+        urlFocus.requestFocus()
+        keyboardController?.show()
     }
 
     LaunchedEffect(errorFieldTarget) {
@@ -108,14 +107,17 @@ fun SettingsScreen(
             SettingsFieldTarget.URL -> {
                 urlBringIntoView.bringIntoView()
                 urlFocus.requestFocus()
+                keyboardController?.show()
             }
             SettingsFieldTarget.PIN -> {
                 setupPinBringIntoView.bringIntoView()
                 setupPinFocus.requestFocus()
+                keyboardController?.show()
             }
             SettingsFieldTarget.PIN_CONFIRMATION -> {
                 setupPinConfirmationBringIntoView.bringIntoView()
                 setupPinConfirmationFocus.requestFocus()
+                keyboardController?.show()
             }
             null -> return@LaunchedEffect
         }
@@ -137,12 +139,7 @@ fun SettingsScreen(
                     .padding(top = 34.dp, bottom = 40.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                SettingsHeader(
-                    firstRun = firstRun,
-                    modifier = Modifier
-                        .focusRequester(initialFocus)
-                        .focusable()
-                )
+                SettingsHeader(firstRun = firstRun)
 
                 SettingsSection(
                 eyebrow = if (firstRun) "01 / PAGE" else "PAGE",
@@ -538,6 +535,42 @@ private fun ChangePinDialog(
         keyboardController?.hide()
         Unit
     }
+    val requestPinFocus = {
+        pinFocus.requestFocus()
+        keyboardController?.show()
+        Unit
+    }
+    val requestConfirmationFocus = {
+        confirmationFocus.requestFocus()
+        keyboardController?.show()
+        Unit
+    }
+    val submitPinChange = submit@{
+        pinError = when {
+            pin.isBlank() -> "Admin PIN is required"
+            !isValidPin(pin) -> "PIN must contain 4 to 12 digits"
+            else -> null
+        }
+        confirmationError = when {
+            confirmation.isBlank() -> "Confirm the Admin PIN"
+            pinError == null && pin != confirmation -> "PINs do not match"
+            else -> null
+        }
+
+        when {
+            pinError != null -> requestPinFocus()
+            confirmationError != null -> requestConfirmationFocus()
+            else -> {
+                dismissKeyboard()
+                onConfirm(pin)
+            }
+        }
+        Unit
+    }
+
+    LaunchedEffect(Unit) {
+        requestPinFocus()
+    }
 
     KioskDialog(
         onDismissRequest = onDismiss,
@@ -563,7 +596,7 @@ private fun ChangePinDialog(
                     error = pinError,
                     modifier = Modifier.focusRequester(pinFocus),
                     imeAction = ImeAction.Next,
-                    onImeAction = { confirmationFocus.requestFocus() },
+                    onImeAction = { requestConfirmationFocus() },
                     onValueChange = {
                         pin = it
                         pinError = null
@@ -576,7 +609,7 @@ private fun ChangePinDialog(
                     error = confirmationError,
                     modifier = Modifier.focusRequester(confirmationFocus),
                     imeAction = ImeAction.Done,
-                    onImeAction = dismissKeyboard,
+                    onImeAction = { submitPinChange() },
                     onValueChange = {
                         confirmation = it
                         confirmationError = null
@@ -588,27 +621,7 @@ private fun ChangePinDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
             Button(
                 shape = MaterialTheme.shapes.medium,
-                onClick = {
-                    pinError = when {
-                        pin.isBlank() -> "Admin PIN is required"
-                        !isValidPin(pin) -> "PIN must contain 4 to 12 digits"
-                        else -> null
-                    }
-                    confirmationError = when {
-                        confirmation.isBlank() -> "Confirm the Admin PIN"
-                        pinError == null && pin != confirmation -> "PINs do not match"
-                        else -> null
-                    }
-
-                    when {
-                        pinError != null -> pinFocus.requestFocus()
-                        confirmationError != null -> confirmationFocus.requestFocus()
-                        else -> {
-                            dismissKeyboard()
-                            onConfirm(pin)
-                        }
-                    }
-                }
+                onClick = { submitPinChange() }
             ) { Text("Change PIN") }
         }
     )

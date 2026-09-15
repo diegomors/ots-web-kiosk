@@ -50,7 +50,9 @@ Form validation is applied before saving:
 - Admin PIN is required and accepts only 4 to 12 digits.
 - PIN confirmation is required and must exactly match the first PIN field.
 - Errors appear below the corresponding field and the first invalid field is brought into view and focused.
-- The software keyboard uses **Next** between related fields and **Done** closes the keyboard on the final field.
+- Opening a form focuses its first editable field so it can be completed with only a TV remote or keyboard.
+- The software keyboard uses **Next** between related fields. **Done** submits the Admin PIN and PIN-change dialogs, while the first-run form closes the keyboard so its remaining device options can be reviewed before saving.
+- A failed submission returns focus to the first invalid field and keeps the software keyboard available.
 
 ## Visible settings
 
@@ -177,6 +179,7 @@ The broader interaction validation below was performed across this AVD and the l
 
 - installation and first-run setup;
 - PIN rejection, unlock, Admin Menu, and Settings;
+- remote-only Admin PIN entry, initial field focus, directional action navigation, and retained focus after validation errors;
 - short and long Back behavior;
 - Cyber Minimal Dark interface;
 - OnTimeStack launcher/UI branding;
